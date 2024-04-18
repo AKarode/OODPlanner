@@ -5,6 +5,7 @@ import cs3500.nuplanner.provider.model.event.Event;
 import cs3500.nuplanner.provider.model.event.Time;
 import model.OurEvent;
 import model.Schedule;
+import model.User;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,13 +20,23 @@ public class DelegatedSchedule implements cs3500.nuplanner.provider.model.schedu
 
   @Override
   public void addEvent(Event e) {
-    this.schedule.addEvent(new OurEvent(e.getName(), e.getLocation(), e.isOnline(), e.getStartDay().toString(), e.getStartTime().toString(), e.getEndDay().toString(), e.getEndTime().toString(), e.getHost(), e.getInvitees())
+    User hostUser = new User(e.getHost());
+    List<User> invitedUsers = e.getInvitees().stream()
+            .map(User::new)
+            .collect(Collectors.toList());
+
+    this.schedule.addEvent(new OurEvent(e.getName(), e.getLocation(), e.isOnline(), e.getStartDay().toString(), e.getStartTime().toString(), e.getEndDay().toString(), e.getEndTime().toString(), hostUser, invitedUsers));
   }
 
   @Override
   public void removeEvent(Event e) {
-    this.schedule.removeEvent(new OurEvent(e.getName(), e.getLocation(), e.isOnline(), e.getStartDay().toString(), e.getStartTime().toString(), e.getEndDay().toString(), e.getEndTime().toString(), e.getHost(), e.getInvitees())
-  }
+    User hostUser = new User(e.getHost());
+    List<User> invitedUsers = e.getInvitees().stream()
+            .map(User::new)
+            .collect(Collectors.toList());
+
+    this.schedule.removeEvent(new OurEvent(e.getName(), e.getLocation(), e.isOnline(), e.getStartDay().toString(), e.getStartTime().toString(), e.getEndDay().toString(), e.getEndTime().toString(), hostUser, invitedUsers));
+  ;}
 
   @Override
   public void modifyEventName(Event event, String newName){
@@ -75,13 +86,18 @@ public class DelegatedSchedule implements cs3500.nuplanner.provider.model.schedu
 
   @Override
   public boolean causesConflict(Event event) {
-    return schedule.
-
+    return schedule.getEvents().stream().anyMatch(e -> e.isOverLapping(new OurEvent(event.getName(),
+            event.getLocation()
+            , event.isOnline(), event.getStartDay().toString(), event.getStartTime().toString(),
+            event.getEndDay().toString(),
+            event.getEndTime().toString(),
+            new User(event.getHost()),
+            event.getInvitees().stream().map(u -> new User(u)).collect(Collectors.toList()))));
   }
 
   @Override
   public List<Event> getEvents() {
-    List<DelegatedEvent> delegatedEvents = schedule.getEvents().stream()
+    List<Event> delegatedEvents = schedule.getEvents().stream()
             .map(DelegatedEvent::new)
             .collect(Collectors.toList());
 
@@ -90,11 +106,11 @@ public class DelegatedSchedule implements cs3500.nuplanner.provider.model.schedu
 
   @Override
   public String getUser() {
-    return schedule.getUser();
+    return schedule.getOwner().getName();
   }
 
   @Override
   public Event viewEvent(Day day, Time time) {
-    return schedule.viewEvent(day, time);
+    return null;
   }
 }
